@@ -44,6 +44,29 @@
             <button class="reset-btn all" onclick="resetAllData()">🗑️ すべてリセット</button>
         </div>
         
+        <!-- 大枠予算設定 -->
+        <div class="budget-section">
+            <div class="section-title">💰 大枠予算設定</div>
+            <div class="total-budget-management" style="margin-bottom: 20px; padding: 15px; background: #e8f5e8; border-radius: 8px; border: 2px solid #4CAF50;">
+                <h4 style="margin: 0 0 10px 0; color: #333;">📋 今月の総予算</h4>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="number" id="totalBudgetInput" placeholder="総予算額" class="amount-input" style="flex: 1;">
+                    <button class="add-btn" onclick="setTotalBudget()" style="background: #4CAF50;">総予算設定</button>
+                </div>
+                <div id="budgetAllocation" style="margin-top: 10px; font-size: 14px; color: #666;">
+                    <div id="budgetSummary">総予算: ¥0 | 配分済み: ¥0 | 残り: ¥0</div>
+                    <div style="margin-top: 8px;">
+                        <div class="progress-bar" style="background: #e0e0e0; height: 12px;">
+                            <div id="budgetAllocationBar" class="progress-fill" style="width: 0%; background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);"></div>
+                        </div>
+                        <div style="font-size: 12px; margin-top: 4px; color: #888;">
+                            <span id="allocationPercentage">0%</span> 配分済み
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="budget-section">
             <div class="section-title">📊 カテゴリ別予算管理</div>
             
@@ -54,6 +77,9 @@
                     <input type="text" id="newCategoryName" placeholder="カテゴリー名" class="category-input text-input">
                     <input type="number" id="newCategoryBudget" placeholder="予算額" class="amount-input">
                     <button class="add-btn" onclick="addCategory()">カテゴリー追加</button>
+                </div>
+                <div id="categoryBudgetWarning" style="margin-top: 8px; color: #f44336; font-size: 12px; display: none;">
+                    ⚠️ 大枠予算を超えています
                 </div>
             </div>
             

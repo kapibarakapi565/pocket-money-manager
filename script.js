@@ -11,11 +11,13 @@ let currentUser = 'user1';
 // ユーザー別データ
 let userData = {
     user1: {
+        totalBudget: 0,
         categoryBudgets: {},
         expenses: [],
         categorySpending: {}
     },
     user2: {
+        totalBudget: 0,
         categoryBudgets: {},
         expenses: [],
         categorySpending: {}
@@ -330,16 +332,52 @@ function updateRemainingDisplay() {
 }
 
 // ==========================================================================
+// 日付・月計算関数
+// ==========================================================================
+
+/**
+ * 16日スタートの月を計算（16日〜翌月15日）
+ * @returns {Object} - {month: 表示月, year: 年}
+ */
+function getCurrentPeriod() {
+    const today = new Date();
+    const currentDate = today.getDate();
+    const currentMonth = today.getMonth() + 1;
+    const currentYear = today.getFullYear();
+    
+    if (currentDate >= 16) {
+        // 16日以降なら現在月
+        return {
+            month: currentMonth,
+            year: currentYear
+        };
+    } else {
+        // 15日以前なら前月
+        if (currentMonth === 1) {
+            return {
+                month: 12,
+                year: currentYear - 1
+            };
+        } else {
+            return {
+                month: currentMonth - 1,
+                year: currentYear
+            };
+        }
+    }
+}
+
+// ==========================================================================
 // ユーティリティ関数
 // ==========================================================================
 
 /**
- * アプリタイトルを現在の月で更新
+ * アプリタイトルを現在の月で更新（16日スタート基準）
  */
 function updateAppTitle() {
-    const currentMonth = new Date().getMonth() + 1;
+    const period = getCurrentPeriod();
     const userName = currentUser === 'user1' ? '夫' : '妻';
-    const title = `💰 ${currentMonth}月 おこづかい管理アプリ（${userName}）`;
+    const title = `💰 ${period.month}月 おこづかい管理アプリ（${userName}）`;
     document.getElementById('appTitle').textContent = title;
 }
 
@@ -372,6 +410,7 @@ function saveCurrentUserData() {
     userData[currentUser].categoryBudgets = { ...categoryBudgets };
     userData[currentUser].expenses = [...expenses];
     userData[currentUser].categorySpending = { ...categorySpending };
+    // totalBudgetは既にuserDataに直接保存されているので、ここでは不要
 }
 
 /**
@@ -381,6 +420,11 @@ function loadCurrentUserData() {
     categoryBudgets = userData[currentUser].categoryBudgets;
     expenses = userData[currentUser].expenses;
     categorySpending = userData[currentUser].categorySpending;
+    // 大枠予算の入力フィールドを更新
+    const totalBudgetInput = document.getElementById('totalBudgetInput');
+    if (totalBudgetInput) {
+        totalBudgetInput.value = userData[currentUser].totalBudget || '';
+    }
 }
 
 /**
@@ -484,18 +528,105 @@ function initializeCategorySpending() {
  * 総予算を更新
  */
 function updateTotalBudget() {
-    TOTAL_BUDGET = Object.values(categoryBudgets).reduce((sum, budget) => sum + budget, 0);
+    TOTAL_BUDGET = userData[currentUser].totalBudget || 0;
     document.querySelector('.summary-card .amount').textContent = formatCurrency(TOTAL_BUDGET);
+    updateBudgetAllocation();
 }
 
 /**
- * 月ごとのデータをリセット
+ * 大枠予算を設定
+ */
+function setTotalBudget() {
+    const totalBudgetInput = document.getElementById('totalBudgetInput');
+    const amount = parseInt(totalBudgetInput.value);
+    
+    if (!amount || amount <= 0) {
+        showMessage('正しい予算額を入力してください', 'error');
+        return;
+    }
+    
+    if (amount > 10000000) {
+        showMessage('予算額が大きすぎます（1000万円以下で入力してください）', 'error');
+        return;
+    }
+    
+    userData[currentUser].totalBudget = amount;
+    TOTAL_BUDGET = amount;
+    
+    // 入力フィールドをクリア
+    totalBudgetInput.value = '';
+    
+    // 表示を更新
+    updateTotalBudget();
+    updateDisplay();
+    
+    showMessage(`総予算を${formatCurrency(amount)}に設定しました`, 'success');
+}
+
+/**
+ * 予算配分状況を更新
+ */
+function updateBudgetAllocation() {
+    const totalBudget = userData[currentUser].totalBudget || 0;
+    const allocatedBudget = Object.values(categoryBudgets).reduce((sum, budget) => sum + budget, 0);
+    const remainingBudget = totalBudget - allocatedBudget;
+    
+    const budgetSummary = document.getElementById('budgetSummary');
+    budgetSummary.innerHTML = `
+        総予算: ${formatCurrency(totalBudget)} | 
+        配分済み: ${formatCurrency(allocatedBudget)} | 
+        残り: <span style="color: ${remainingBudget < 0 ? '#f44336' : '#4CAF50'}">${formatCurrency(remainingBudget)}</span>
+    `;
+    
+    // プログレスバーの更新
+    const allocationBar = document.getElementById('budgetAllocationBar');
+    const allocationPercentage = document.getElementById('allocationPercentage');
+    
+    if (totalBudget > 0) {
+        const percentage = Math.min((allocatedBudget / totalBudget) * 100, 100);
+        allocationBar.style.width = `${percentage}%`;
+        allocationPercentage.textContent = `${Math.round(percentage)}%`;
+        
+        // 100%を超えた場合は赤色に変更
+        if (percentage > 100) {
+            allocationBar.style.background = 'linear-gradient(90deg, #f44336 0%, #d32f2f 100%)';
+            allocationBar.style.width = '100%';
+            allocationPercentage.textContent = `${Math.round((allocatedBudget / totalBudget) * 100)}%`;
+        } else {
+            allocationBar.style.background = 'linear-gradient(90deg, #4CAF50 0%, #45a049 100%)';
+        }
+    } else {
+        allocationBar.style.width = '0%';
+        allocationPercentage.textContent = '0%';
+    }
+    
+    // 予算オーバーの警告表示
+    const warning = document.getElementById('categoryBudgetWarning');
+    if (remainingBudget < 0) {
+        warning.style.display = 'block';
+        warning.textContent = `⚠️ 大枠予算を${formatCurrency(Math.abs(remainingBudget))}超えています`;
+    } else {
+        warning.style.display = 'none';
+    }
+}
+
+/**
+ * 月ごとのデータをリセット（16日スタート基準）
  */
 function resetMonthlyData() {
-    const currentMonth = new Date().getMonth() + 1;
-    const currentYear = new Date().getFullYear();
+    const period = getCurrentPeriod();
+    const today = new Date();
+    const currentDate = today.getDate();
     
-    if (!confirm(`${currentYear}年${currentMonth}月のデータをリセットしますか？\n\n以下のデータが削除されます：\n• すべての支出記録\n• カテゴリーの使用額\n\n※カテゴリーと予算設定は保持されます`)) {
+    // 期間の説明を作成
+    let periodDescription;
+    if (currentDate >= 16) {
+        periodDescription = `${period.month}月16日〜翌月15日`;
+    } else {
+        periodDescription = `${period.month}月16日〜${period.month + 1}月15日`;
+    }
+    
+    if (!confirm(`${period.year}年${periodDescription}のデータをリセットしますか？\n\n以下のデータが削除されます：\n• すべての支出記録\n• カテゴリーの使用額\n\n※カテゴリーと予算設定は保持されます`)) {
         return;
     }
     
@@ -513,7 +644,7 @@ function resetMonthlyData() {
     // タイトルも更新
     updateAppTitle();
     
-    showMessage(`${currentMonth}月のデータをリセットしました`, 'success');
+    showMessage(`${period.month}月のデータをリセットしました`, 'success');
 }
 
 /**
@@ -620,6 +751,20 @@ function editCategoryBudget(categoryName) {
         return;
     }
     
+    // 大枠予算のチェック（編集時）
+    const totalBudget = userData[currentUser].totalBudget || 0;
+    if (totalBudget > 0) {
+        const currentAllocated = Object.values(categoryBudgets).reduce((sum, b) => sum + b, 0);
+        const otherCategoriesTotal = currentAllocated - currentBudget;
+        const newTotal = otherCategoriesTotal + budget;
+        
+        if (newTotal > totalBudget) {
+            const maxAllowable = totalBudget - otherCategoriesTotal;
+            showMessage(`大枠予算を超えます。このカテゴリーの上限: ${formatCurrency(maxAllowable)}`, 'error');
+            return;
+        }
+    }
+    
     categoryBudgets[categoryName] = budget;
     updateTotalBudget();
     updateDisplay();
@@ -652,6 +797,19 @@ function validateCategoryInput(categoryName, budget) {
     if (budget > 1000000) {
         showMessage('予算額が大きすぎます（100万円以下で入力してください）', 'error');
         return false;
+    }
+    
+    // 大枠予算のチェック
+    const totalBudget = userData[currentUser].totalBudget || 0;
+    if (totalBudget > 0) {
+        const currentAllocated = Object.values(categoryBudgets).reduce((sum, b) => sum + b, 0);
+        const newTotal = currentAllocated + budget;
+        
+        if (newTotal > totalBudget) {
+            const remaining = totalBudget - currentAllocated;
+            showMessage(`大枠予算を超えます。残り予算: ${formatCurrency(remaining)}`, 'error');
+            return false;
+        }
     }
     
     return true;
