@@ -7,6 +7,7 @@ let TOTAL_BUDGET = 0;
 
 // ユーザー管理
 let currentUser = 'user1';
+let currentMode = 'personal'; // 'personal' or 'household'
 
 // ユーザー別データ
 let userData = {
@@ -22,6 +23,16 @@ let userData = {
         expenses: [],
         categorySpending: {}
     }
+};
+
+// 家計管理データ
+let householdData = {
+    totalBudget: 0,
+    categoryBudgets: {},
+    expenses: [],
+    categorySpending: {},
+    savingsGoal: 0,
+    actualSavings: 0
 };
 
 // 現在のユーザーのデータを参照する変数
@@ -50,6 +61,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ユーザーボタンのUIを更新
     updateUserButtons();
+    
+    // モードボタンのUIを更新
+    updateModeButtons();
     
     // カテゴリー支出を初期化
     initializeCategorySpending();
@@ -223,7 +237,11 @@ function calculateUsageRate() {
  * すべての表示を更新
  */
 function updateDisplay() {
-    updateSummaryCards();
+    if (currentMode === 'personal') {
+        updateSummaryCards();
+    } else {
+        updateHouseholdSummaryCards();
+    }
     updateBudgetTable();
     updateExpenseList();
     updateRemainingDisplay();
@@ -240,6 +258,52 @@ function updateSummaryCards() {
     document.getElementById('totalSpent').textContent = formatCurrency(totalSpent);
     document.getElementById('remaining').textContent = formatCurrency(remaining);
     document.getElementById('usageRate').textContent = `${usageRate}%`;
+}
+
+/**
+ * 家計サマリーカードを更新
+ */
+function updateHouseholdSummaryCards() {
+    const totalSpent = calculateTotalSpent();
+    const remaining = calculateRemaining();
+    const savingsGoal = householdData.savingsGoal || 0;
+    const actualSavings = remaining; // 残り予算を実際の貯蓄として計算
+    
+    document.getElementById('householdBudget').textContent = formatCurrency(householdData.totalBudget || 0);
+    document.getElementById('householdSpent').textContent = formatCurrency(totalSpent);
+    document.getElementById('householdRemaining').textContent = formatCurrency(remaining);
+    document.getElementById('savingsGoal').textContent = formatCurrency(savingsGoal);
+    
+    // 貯蓄進捗を更新
+    updateSavingsProgress();
+}
+
+/**
+ * 貯蓄進捗を更新
+ */
+function updateSavingsProgress() {
+    const savingsGoal = householdData.savingsGoal || 0;
+    const actualSavings = calculateRemaining(); // 残り予算を実際の貯蓄として計算
+    const achievementRate = savingsGoal > 0 ? Math.min(Math.round((actualSavings / savingsGoal) * 100), 100) : 0;
+    
+    const savingsSummary = document.getElementById('savingsSummary');
+    if (savingsSummary) {
+        savingsSummary.innerHTML = `
+            目標: ${formatCurrency(savingsGoal)} | 
+            実績: ${formatCurrency(actualSavings)} | 
+            達成率: <span style="color: ${achievementRate >= 100 ? '#4CAF50' : '#2196F3'}">${achievementRate}%</span>
+        `;
+    }
+    
+    const savingsProgressBar = document.getElementById('savingsProgressBar');
+    if (savingsProgressBar) {
+        savingsProgressBar.style.width = `${achievementRate}%`;
+        if (achievementRate >= 100) {
+            savingsProgressBar.style.background = 'linear-gradient(90deg, #4CAF50 0%, #45a049 100%)';
+        } else {
+            savingsProgressBar.style.background = 'linear-gradient(90deg, #2196F3 0%, #1976D2 100%)';
+        }
+    }
 }
 
 /**
@@ -376,8 +440,15 @@ function getCurrentPeriod() {
  */
 function updateAppTitle() {
     const period = getCurrentPeriod();
-    const userName = currentUser === 'user1' ? '夫' : '妻';
-    const title = `💰 ${period.month}月 おこづかい管理アプリ（${userName}）`;
+    let title;
+    
+    if (currentMode === 'personal') {
+        const userName = currentUser === 'user1' ? '夫' : '妻';
+        title = `💰 ${period.month}月 おこづかい管理アプリ（${userName}）`;
+    } else {
+        title = `🏠 ${period.month}月 家計管理アプリ`;
+    }
+    
     document.getElementById('appTitle').textContent = title;
 }
 
@@ -385,6 +456,11 @@ function updateAppTitle() {
  * ユーザーを切り替え
  */
 function switchUser(userId) {
+    // 家計管理モードの場合は切り替えを無効化
+    if (currentMode === 'household') {
+        return;
+    }
+    
     // 現在のデータを保存
     saveCurrentUserData();
     
@@ -401,6 +477,49 @@ function switchUser(userId) {
     
     const userName = currentUser === 'user1' ? '夫' : '妻';
     showMessage(`${userName}のデータに切り替えました`, 'success');
+}
+
+/**
+ * 管理モードを切り替え
+ */
+function switchMode(mode) {
+    // 現在のデータを保存
+    if (currentMode === 'personal') {
+        saveCurrentUserData();
+    } else {
+        saveHouseholdData();
+    }
+    
+    // モードを切り替え
+    currentMode = mode;
+    
+    // UIを更新
+    updateModeButtons();
+    updateAppTitle();
+    
+    if (mode === 'personal') {
+        // 個人管理モードに切り替え
+        document.getElementById('personalSection').style.display = 'block';
+        document.getElementById('householdSection').style.display = 'none';
+        document.getElementById('userSelection').style.display = 'flex';
+        
+        // 個人データを読み込み
+        loadCurrentUserData();
+        
+        showMessage('個人管理モードに切り替えました', 'success');
+    } else {
+        // 家計管理モードに切り替え
+        document.getElementById('personalSection').style.display = 'none';
+        document.getElementById('householdSection').style.display = 'block';
+        document.getElementById('userSelection').style.display = 'none';
+        
+        // 家計データを読み込み
+        loadHouseholdData();
+        
+        showMessage('家計管理モードに切り替えました', 'success');
+    }
+    
+    updateDisplay();
 }
 
 /**
@@ -428,11 +547,52 @@ function loadCurrentUserData() {
 }
 
 /**
+ * 家計管理データを読み込み
+ */
+function loadHouseholdData() {
+    categoryBudgets = householdData.categoryBudgets;
+    expenses = householdData.expenses;
+    categorySpending = householdData.categorySpending;
+    // 大枠予算の入力フィールドを更新
+    const totalBudgetInput = document.getElementById('totalBudgetInput');
+    if (totalBudgetInput) {
+        totalBudgetInput.value = householdData.totalBudget || '';
+    }
+    // 貯蓄目標の入力フィールドを更新
+    const savingsGoalInput = document.getElementById('savingsGoalInput');
+    if (savingsGoalInput) {
+        savingsGoalInput.value = householdData.savingsGoal || '';
+    }
+}
+
+/**
+ * 家計管理データを保存
+ */
+function saveHouseholdData() {
+    householdData.categoryBudgets = categoryBudgets;
+    householdData.expenses = expenses;
+    householdData.categorySpending = categorySpending;
+    householdData.totalBudget = parseInt(document.getElementById('totalBudgetInput').value) || 0;
+    const savingsGoalInput = document.getElementById('savingsGoalInput');
+    if (savingsGoalInput) {
+        householdData.savingsGoal = parseInt(savingsGoalInput.value) || 0;
+    }
+}
+
+/**
  * ユーザーボタンのUIを更新
  */
 function updateUserButtons() {
     document.getElementById('userBtn1').className = currentUser === 'user1' ? 'user-btn active' : 'user-btn';
     document.getElementById('userBtn2').className = currentUser === 'user2' ? 'user-btn active' : 'user-btn';
+}
+
+/**
+ * モードボタンのUIを更新
+ */
+function updateModeButtons() {
+    document.getElementById('modeBtn1').className = currentMode === 'personal' ? 'mode-btn active' : 'mode-btn';
+    document.getElementById('modeBtn2').className = currentMode === 'household' ? 'mode-btn active' : 'mode-btn';
 }
 
 /**
@@ -550,7 +710,11 @@ function setTotalBudget() {
         return;
     }
     
-    userData[currentUser].totalBudget = amount;
+    if (currentMode === 'personal') {
+        userData[currentUser].totalBudget = amount;
+    } else {
+        householdData.totalBudget = amount;
+    }
     TOTAL_BUDGET = amount;
     
     // 入力フィールドをクリア
@@ -560,20 +724,52 @@ function setTotalBudget() {
     updateTotalBudget();
     updateDisplay();
     
-    showMessage(`総予算を${formatCurrency(amount)}に設定しました`, 'success');
+    const budgetType = currentMode === 'personal' ? 'お小遣い' : '家計';
+    showMessage(`${budgetType}予算を${formatCurrency(amount)}に設定しました`, 'success');
+}
+
+/**
+ * 貯蓄目標を設定
+ */
+function setSavingsGoal() {
+    const savingsGoalInput = document.getElementById('savingsGoalInput');
+    const amount = parseInt(savingsGoalInput.value);
+    
+    if (!amount || amount <= 0) {
+        showMessage('正しい貯蓄目標額を入力してください', 'error');
+        return;
+    }
+    
+    if (amount > 10000000) {
+        showMessage('貯蓄目標額が大きすぎます（1000万円以下で入力してください）', 'error');
+        return;
+    }
+    
+    householdData.savingsGoal = amount;
+    
+    // 入力フィールドをクリア
+    savingsGoalInput.value = '';
+    
+    showMessage(`貯蓄目標を${formatCurrency(amount)}に設定しました`, 'success');
+    
+    // 表示更新
+    updateDisplay();
 }
 
 /**
  * 予算配分状況を更新
  */
 function updateBudgetAllocation() {
-    const totalBudget = userData[currentUser].totalBudget || 0;
+    const totalBudget = currentMode === 'personal' ? 
+        (userData[currentUser].totalBudget || 0) : 
+        (householdData.totalBudget || 0);
     const allocatedBudget = Object.values(categoryBudgets).reduce((sum, budget) => sum + budget, 0);
     const remainingBudget = totalBudget - allocatedBudget;
     
     const budgetSummary = document.getElementById('budgetSummary');
+    const budgetLabel = currentMode === 'personal' ? '総予算' : '家計予算';
     budgetSummary.innerHTML = `
-        総予算: ${formatCurrency(totalBudget)} | 
+        ${budgetLabel}: ${formatCurrency(totalBudget)} | 
         配分済み: ${formatCurrency(allocatedBudget)} | 
         残り: <span style="color: ${remainingBudget < 0 ? '#f44336' : '#4CAF50'}">${formatCurrency(remainingBudget)}</span>
     `;

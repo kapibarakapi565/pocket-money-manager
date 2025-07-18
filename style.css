@@ -235,6 +235,32 @@ tr:hover {
     background: #5a6fd8;
 }
 
+/* モード選択ボタン */
+.mode-btn {
+    background: #9C27B0;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.3s;
+    min-width: 100px;
+}
+.mode-btn:hover {
+    background: #7B1FA2;
+    transform: translateY(-2px);
+}
+.mode-btn.active {
+    background: #FF9800;
+    color: white;
+    box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+}
+.mode-btn.active:hover {
+    background: #F57C00;
+}
+
 /* 支出アイテム */
 .expense-item {
     background: #f8f9fa;

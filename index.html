@@ -8,10 +8,14 @@
 </head>
 <body>
     <div class="container">
-        <!-- ユーザー選択 -->
-        <div class="user-selection" style="text-align: center; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-            <h3 style="margin: 0 0 10px 0; color: #333;">👤 ユーザー選択</h3>
-            <div style="display: flex; gap: 10px; justify-content: center;">
+        <!-- モード選択 -->
+        <div class="mode-selection" style="text-align: center; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <h3 style="margin: 0 0 15px 0; color: #333;">📊 管理モード選択</h3>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                <button id="modeBtn1" class="mode-btn active" onclick="switchMode('personal')">個人管理</button>
+                <button id="modeBtn2" class="mode-btn" onclick="switchMode('household')">家計管理</button>
+            </div>
+            <div id="userSelection" style="display: flex; gap: 10px; justify-content: center;">
                 <button id="userBtn1" class="user-btn active" onclick="switchUser('user1')">夫</button>
                 <button id="userBtn2" class="user-btn" onclick="switchUser('user2')">妻</button>
             </div>
@@ -19,22 +23,67 @@
         
         <h1 id="appTitle">💰 おこづかい管理アプリ</h1>
         
-        <div class="summary-section">
-            <div class="summary-card">
-                <h3>今月の予算</h3>
-                <p class="amount">¥0</p>
+        <!-- 個人管理セクション -->
+        <div id="personalSection">
+            <div class="summary-section">
+                <div class="summary-card">
+                    <h3>今月の予算</h3>
+                    <p class="amount">¥0</p>
+                </div>
+                <div class="summary-card">
+                    <h3>使った金額</h3>
+                    <p class="amount" id="totalSpent">¥0</p>
+                </div>
+                <div class="summary-card">
+                    <h3>残り予算</h3>
+                    <p class="amount" id="remaining">¥0</p>
+                </div>
+                <div class="summary-card">
+                    <h3>使用率</h3>
+                    <p class="amount" id="usageRate">0%</p>
+                </div>
             </div>
-            <div class="summary-card">
-                <h3>使った金額</h3>
-                <p class="amount" id="totalSpent">¥0</p>
+        </div>
+        
+        <!-- 家計管理セクション -->
+        <div id="householdSection" style="display: none;">
+            <div class="summary-section">
+                <div class="summary-card">
+                    <h3>家計予算</h3>
+                    <p class="amount" id="householdBudget">¥0</p>
+                </div>
+                <div class="summary-card">
+                    <h3>家計支出</h3>
+                    <p class="amount" id="householdSpent">¥0</p>
+                </div>
+                <div class="summary-card">
+                    <h3>残り予算</h3>
+                    <p class="amount" id="householdRemaining">¥0</p>
+                </div>
+                <div class="summary-card">
+                    <h3>貯蓄目標</h3>
+                    <p class="amount" id="savingsGoal">¥0</p>
+                </div>
             </div>
-            <div class="summary-card">
-                <h3>残り予算</h3>
-                <p class="amount" id="remaining">¥0</p>
-            </div>
-            <div class="summary-card">
-                <h3>使用率</h3>
-                <p class="amount" id="usageRate">0%</p>
+            
+            <!-- 貯蓄目標設定 -->
+            <div class="budget-section">
+                <div class="section-title">💰 貯蓄目標設定</div>
+                <div class="savings-management" style="margin-bottom: 20px; padding: 15px; background: #e8f5e8; border-radius: 8px; border: 2px solid #4CAF50;">
+                    <h4 style="margin: 0 0 10px 0; color: #333;">🎯 今月の貯蓄目標</h4>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <input type="number" id="savingsGoalInput" placeholder="目標貯蓄額" class="amount-input" style="flex: 1;">
+                        <button class="add-btn" onclick="setSavingsGoal()" style="background: #4CAF50;">貯蓄目標設定</button>
+                    </div>
+                    <div id="savingsProgress" style="margin-top: 10px; font-size: 14px; color: #666;">
+                        <div id="savingsSummary">目標: ¥0 | 実績: ¥0 | 達成率: 0%</div>
+                        <div style="margin-top: 8px;">
+                            <div class="progress-bar" style="background: #e0e0e0; height: 12px;">
+                                <div id="savingsProgressBar" class="progress-fill" style="width: 0%; background: linear-gradient(90deg, #2196F3 0%, #1976D2 100%);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
