@@ -9,6 +9,9 @@ let TOTAL_BUDGET = 0;
 let currentUser = 'user1';
 let currentMode = 'personal'; // 'personal' or 'household'
 
+// ローカルストレージキー
+const STORAGE_KEY = 'pocket_money_manager_data';
+
 // ユーザー別データ
 let userData = {
     user1: {
@@ -41,6 +44,51 @@ let expenses = userData[currentUser].expenses;
 let categorySpending = userData[currentUser].categorySpending;
 
 // ==========================================================================
+// ローカルストレージ管理
+// ==========================================================================
+
+/**
+ * データをローカルストレージに保存
+ */
+function saveToLocalStorage() {
+    const data = {
+        userData: userData,
+        householdData: householdData,
+        currentUser: currentUser,
+        currentMode: currentMode
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+/**
+ * ローカルストレージからデータを読み込み
+ */
+function loadFromLocalStorage() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            if (data.userData) userData = data.userData;
+            if (data.householdData) householdData = data.householdData;
+            if (data.currentUser) currentUser = data.currentUser;
+            if (data.currentMode) currentMode = data.currentMode;
+            return true;
+        } catch (e) {
+            console.error('データの読み込みに失敗しました:', e);
+            return false;
+        }
+    }
+    return false;
+}
+
+/**
+ * ローカルストレージをクリア
+ */
+function clearLocalStorage() {
+    localStorage.removeItem(STORAGE_KEY);
+}
+
+// ==========================================================================
 // 初期化
 // ==========================================================================
 
@@ -48,13 +96,31 @@ let categorySpending = userData[currentUser].categorySpending;
  * ページ読み込み時の初期化処理
  */
 document.addEventListener('DOMContentLoaded', function() {
+    // 保存されたデータを読み込み
+    const hasData = loadFromLocalStorage();
+    
+    if (hasData) {
+        // 保存されたデータがある場合は、現在のユーザーとモードに基づいてデータを読み込み
+        if (currentMode === 'personal') {
+            loadCurrentUserData();
+        } else {
+            loadHouseholdData();
+        }
+        
+        // UIを更新
+        updateModeButtons();
+        updateUserButtons();
+    }
+    
     // 今日の日付を設定
     const today = new Date();
     const dateString = today.toISOString().split('T')[0];
     document.getElementById('expenseDate').value = dateString;
     
     // 初期ユーザーデータの読み込み
-    loadCurrentUserData();
+    if (!hasData) {
+        loadCurrentUserData();
+    }
     
     // アプリタイトルを現在の月で更新
     updateAppTitle();
@@ -530,6 +596,9 @@ function saveCurrentUserData() {
     userData[currentUser].expenses = [...expenses];
     userData[currentUser].categorySpending = { ...categorySpending };
     // totalBudgetは既にuserDataに直接保存されているので、ここでは不要
+    
+    // ローカルストレージに保存
+    saveToLocalStorage();
 }
 
 /**
@@ -577,6 +646,9 @@ function saveHouseholdData() {
     if (savingsGoalInput) {
         householdData.savingsGoal = parseInt(savingsGoalInput.value) || 0;
     }
+    
+    // ローカルストレージに保存
+    saveToLocalStorage();
 }
 
 /**
@@ -834,6 +906,9 @@ function resetMonthlyData() {
         categorySpending[category] = 0;
     });
     
+    // ローカルストレージに保存
+    saveToLocalStorage();
+    
     // 表示を更新
     updateDisplay();
     
@@ -847,7 +922,7 @@ function resetMonthlyData() {
  * すべてのデータをリセット（カテゴリーも含む）
  */
 function resetAllData() {
-    if (!confirm('すべてのデータをリセットしますか？\n\n以下のデータが削除されます：\n• すべての支出記録\n• すべてのカテゴリー\n• 予算設定')) {
+    if (!confirm('すべてのデータをリセットしますか？\n\n以下のデータが削除されます：\n• すべての支出記録\n• すべてのカテゴリー\n• 予算設定\n• 保存されたデータ')) {
         return;
     }
     
@@ -856,6 +931,9 @@ function resetAllData() {
     categoryBudgets = {};
     categorySpending = {};
     TOTAL_BUDGET = 0;
+    
+    // ローカルストレージもクリア
+    clearLocalStorage();
     
     // 表示を更新
     updateDisplay();
