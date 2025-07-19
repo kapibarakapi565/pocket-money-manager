@@ -12,6 +12,74 @@ body {
     min-height: 100vh;
 }
 
+/* ログイン画面 */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+}
+
+.login-box {
+    background: white;
+    border-radius: 15px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+}
+
+.login-box h2 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.login-box p {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.password-input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.password-input:focus {
+    border-color: #667eea;
+    outline: none;
+}
+
+.login-btn {
+    width: 100%;
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    background: #5a6fd8;
+    transform: translateY(-2px);
+}
+
+.error-message {
+    color: #f44336;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
 .container {
     background: white;
     border-radius: 15px;

@@ -2,6 +2,58 @@
 // お小遣い予算管理表 - JavaScript
 // ==========================================================================
 
+// 認証関連
+const CORRECT_PASSWORD = 'family2024'; // パスワードを変更してください
+
+/**
+ * パスワードチェック
+ */
+function checkPassword() {
+    const inputPassword = document.getElementById('passwordInput').value;
+    const loginError = document.getElementById('loginError');
+    
+    if (inputPassword === CORRECT_PASSWORD) {
+        // ログイン成功
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        loginError.style.display = 'none';
+        
+        // セッションストレージにログイン状態を保存
+        sessionStorage.setItem('isLoggedIn', 'true');
+    } else {
+        // ログイン失敗
+        loginError.style.display = 'block';
+        document.getElementById('passwordInput').value = '';
+    }
+}
+
+/**
+ * ログイン状態をチェック
+ */
+function checkLoginStatus() {
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+    if (isLoggedIn === 'true') {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+    }
+}
+
+// Enterキーでログイン
+document.addEventListener('DOMContentLoaded', function() {
+    // ログイン状態をチェック
+    checkLoginStatus();
+    
+    // パスワード入力でEnterキー対応
+    const passwordInput = document.getElementById('passwordInput');
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+    }
+});
+
 // 定数定義
 let TOTAL_BUDGET = 0;
 
